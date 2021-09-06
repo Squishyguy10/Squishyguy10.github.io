@@ -81,8 +81,21 @@ function update(){
     veryOldX = oldX - (velocityX * 5);
     veryOldY = oldY - (velocityY * 5);
 
+    if(x >= 500) {
+        x = 0;
+    }
+    if(x < 0) {
+        x = 500;
+    }
+    if(y >= 500) {
+        y = 0;
+    }
+    if(y < 0) {
+        y = 500;
+    }
+
     afkX+= afkVelocityX;
-    if(afkX >= 400) {
+    if(afkX >= 480) {
         afkVelocityX = -AFK_VELOCITY_MAX;
     }
     else if(afkX <= 0) {
