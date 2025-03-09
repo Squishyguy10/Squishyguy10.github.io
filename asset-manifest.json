@@ -1,0 +1,30 @@
+{
+  "files": {
+    "main.css": "/static/css/main.91595e22.css",
+    "main.js": "/static/js/main.4a7b042e.js",
+    "static/js/453.93ad982a.chunk.js": "/static/js/453.93ad982a.chunk.js",
+    "static/media/t3r.png": "/static/media/t3r.8f8b4d0ad401a507ca46.png",
+    "static/media/aaron.jpg": "/static/media/aaron.fd1d39fbc928120ea5ab.jpg",
+    "static/media/seal.jpg": "/static/media/seal.247b4d483a9e186572e4.jpg",
+    "static/media/color-sharp2.png": "/static/media/color-sharp2.c87586c6c2f549cb4aa6.png",
+    "static/media/background.jpg": "/static/media/background.47a99cf12ede338f2c11.jpg",
+    "static/media/goockgames.png": "/static/media/goockgames.9c01d5492d857092d467.png",
+    "static/media/CentraNo2-Bold.ttf": "/static/media/CentraNo2-Bold.2faff7f7d3fc92a2fcd9.ttf",
+    "static/media/CentraNo2-Medium.ttf": "/static/media/CentraNo2-Medium.f94be5b326d78bb32b95.ttf",
+    "static/media/CentraNo2-Book.ttf": "/static/media/CentraNo2-Book.2b143fa4b734a3584043.ttf",
+    "static/media/tag.png": "/static/media/tag.f9773e191fb495e4235f.png",
+    "static/media/sparelinklogo.png": "/static/media/sparelinklogo.a9067cdde8685ecdee0b.png",
+    "static/media/tabletablet.jpg": "/static/media/tabletablet.46d233f63e41a69e75fb.jpg",
+    "static/media/instagram.svg": "/static/media/instagram.72cef43bc93b04f52e29f022ef720f8b.svg",
+    "static/media/github.svg": "/static/media/github.a72c840be41c3bd03fef814ec7fedcce.svg",
+    "static/media/linkedin.svg": "/static/media/linkedin.dff40ae802524d8fc0cbce3f312abe4f.svg",
+    "index.html": "/index.html",
+    "main.91595e22.css.map": "/static/css/main.91595e22.css.map",
+    "main.4a7b042e.js.map": "/static/js/main.4a7b042e.js.map",
+    "453.93ad982a.chunk.js.map": "/static/js/453.93ad982a.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.91595e22.css",
+    "static/js/main.4a7b042e.js"
+  ]
+}
