@@ -45,7 +45,7 @@ export const Banner = () => {
                 <Row className="align-items-centre">
                     <Col cs={12} md={6} xl={7}>
                     <h1>{" "}<span className="wrap">{text || "\u00A0"}</span>{" "}</h1>
-                        <p> Hi! I'm Aaron Yang. I am currently in my 1B term in the University of Waterloo, studying Computer Science 🐸. 
+                        <p> Hi! I'm Aaron Yang. I am currently in my 2A term in the University of Waterloo, studying Computer Science 🐸. 
                             I have experience with a variety of languages, such as C++, Java, Python, Javascript, and R.  
                         </p>
                         <p> This website was created with React, CSS, and Bootstrap. Please feel free to check around! </p>
