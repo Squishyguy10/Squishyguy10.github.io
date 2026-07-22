@@ -36,7 +36,6 @@ export const NavBar = () => {
                 <span className="navbar-text">
                     <div className="social-icon">
                         <a href="https://www.linkedin.com/in/aaron-yang-9b0767269/" target="_blank" rel="noopener noreferrer" title="LinkedIn"><img src={linkedin} alt="LinkedIn" /></a>
-                        <a href="https://www.instagram.com/squishyguy10/" target="_blank" rel="noopener noreferrer" title="Instagram"><img src={instagram} alt="Instagram" /></a>
                         <span className="github">
                             <a href="https://github.com/Squishyguy10" target="_blank" rel="noopener noreferrer" title="Github"><img src={github} alt="Github" /></a>
                         </span>
