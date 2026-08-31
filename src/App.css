@@ -439,27 +439,75 @@ span.Navbar-text {
 }
 
 
-/* Resume */
+/* Sandbox */
 
-.resume {
-  padding: 80px 0;
+.sandbox {
+  padding: 80px 0 90px;
   position: relative;
+  background-color: #14131a;
 }
 
-.resume h2 {
-  color: black;
-	font-size: 45px;
-	font-weight: 700;
+.sandbox h2 {
+  font-size: clamp(34px, 5vw, 48px);
+  font-weight: 700;
+  letter-spacing: -0.5px;
   text-align: center;
+  background: linear-gradient(90deg, #7fd3ff 0%, #a58bff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
-.resume p {
-  color: rgb(52, 50, 50);
-  font-size: 18px;
-  letter-spacing: 0.8px;
-  padding: 12px;
-  line-height: 2em;
-  margin: 14px auto 30px auto;
+.sandbox-intro {
+  color: #b0aeb8;
+  font-size: 17px;
+  font-weight: 400;
+  letter-spacing: 0.3px;
+  line-height: 1.7;
+  margin: 18px auto 40px auto;
   text-align: center;
-  width: 56%;
+  max-width: 660px;
+}
+
+.sandbox-tank {
+  position: relative;
+  overflow: hidden;
+  border-radius: 18px;
+  border: 1px solid rgba(140, 210, 240, 0.16);
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.5), inset 0 0 60px rgba(0, 20, 40, 0.5);
+}
+
+.sandbox-canvas {
+  display: block;
+  width: 100%;
+  height: clamp(340px, 55vh, 540px);
+  background-color: #0d3048;
+  touch-action: pan-y;
+  cursor: none;
+}
+
+.sandbox-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px 14px;
+  margin: 22px 0 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sandbox-legend li {
+  padding: 7px 14px;
+  border: 1px solid rgba(165, 139, 255, 0.28);
+  border-radius: 999px;
+  background: rgba(165, 139, 255, 0.1);
+  color: #a5a3ad;
+  font-size: 13px;
+  letter-spacing: 0.3px;
+}
+
+.sandbox-legend strong {
+  color: #ddc7ff;
+  font-weight: 700;
+  margin-right: 6px;
 }

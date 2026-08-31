@@ -3,7 +3,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import { NavBar } from './components/NaviBar';
 import { Banner } from './components/Banner';
 import { Projects } from './components/Projects';
-import { Resume } from './components/Resume';
+import { Sandbox } from './components/Sandbox';
 
 function App() {
   return (
@@ -11,7 +11,7 @@ function App() {
       <NavBar />
       <Banner />
       <Projects />
-      <Resume />
+      <Sandbox />
     </div>
   );
 }
