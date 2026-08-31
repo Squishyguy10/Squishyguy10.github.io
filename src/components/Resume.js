@@ -1,4 +1,4 @@
-import { Container, Row, Col, Nav, Tab } from 'react-bootstrap';
+import { Container, Row, Col } from 'react-bootstrap';
 
 export const Resume = () => {
     return (

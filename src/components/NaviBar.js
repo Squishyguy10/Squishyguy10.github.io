@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { Navbar, Container, Nav } from 'react-bootstrap';
 import linkedin from "../assets/img/linkedin.svg"
 import github from "../assets/img/github.svg"
-import instagram from "../assets/img/instagram.svg"
 
 export const NavBar = () => {
     const [link, setLink] = useState("home");
