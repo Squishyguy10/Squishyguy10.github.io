@@ -87,6 +87,7 @@ export const Sandbox = () => {
         let motes = [];
         let wakeL = [];
         let wakeR = [];
+        let wakeNoise = 0;
         let waterGradient = null;
         let depthGradient = null;
         let vignette = null;
@@ -95,7 +96,7 @@ export const Sandbox = () => {
         const pointer = {
             x: 0, y: 0, prevX: 0, prevY: 0, vx: 0, vy: 0,
             active: false, primed: false,
-            angle: 0, targetAngle: 0,
+            angle: 0, targetAngle: 0, moveAngle: 0, turnRate: 0,
             wakeDist: 0, bowDist: 0,
         };
 
@@ -235,7 +236,10 @@ export const Sandbox = () => {
         const addWake = (x, y, angle, amp, brk) => {
             const nx = Math.cos(angle);
             const ny = Math.sin(angle);
-            const spread = 0.75 + amp * 0.45;
+            // A correlated random walk, so neighbouring points drift together and the arm
+            // undulates instead of zigzagging.
+            wakeNoise = Math.max(-0.25, Math.min(0.25, wakeNoise * 0.86 + (Math.random() - 0.5) * 0.12));
+            const spread = (0.75 + amp * 0.45) * (1 + wakeNoise);
             if (wakeL.length > 150) wakeL.shift();
             if (wakeR.length > 150) wakeR.shift();
             wakeL.push({ x, y, vx: -ny * spread - nx * 0.2, vy: nx * spread - ny * 0.2, life: 1, amp, brk });
@@ -249,32 +253,44 @@ export const Sandbox = () => {
             const my = pointer.y - pointer.prevY;
             pointer.prevX = pointer.x;
             pointer.prevY = pointer.y;
-            pointer.vx += (mx - pointer.vx) * 0.25;
-            pointer.vy += (my - pointer.vy) * 0.25;
+            pointer.vx += (mx - pointer.vx) * 0.14;
+            pointer.vy += (my - pointer.vy) * 0.14;
 
             const speed = Math.hypot(pointer.vx, pointer.vy);
-            if (speed > 0.4) pointer.targetAngle = Math.atan2(pointer.vy, pointer.vx);
+            if (speed > 0.35) {
+                pointer.moveAngle = Math.atan2(pointer.vy, pointer.vx);
+                pointer.targetAngle = pointer.moveAngle;
+            }
 
             let turn = pointer.targetAngle - pointer.angle;
             turn = Math.atan2(Math.sin(turn), Math.cos(turn));
-            const maxTurn = 0.13;
-            pointer.angle += Math.max(-maxTurn, Math.min(maxTurn, turn * 0.22));
+            // Angular rate scales with speed the way a real turn radius does (omega = v / R),
+            // so a fast shark can still carve; the eased rate keeps it from snapping.
+            const agility = Math.min(0.16, 0.02 + speed * 0.012);
+            const wanted = Math.max(-agility, Math.min(agility, turn * 0.12));
+            pointer.turnRate += (wanted - pointer.turnRate) * 0.15;
+            pointer.angle += pointer.turnRate;
+
+            // The body lags the travel direction through a turn; water is displaced along the
+            // path, not along the nose, so waves key off moveAngle and this slip angle.
+            let slip = pointer.moveAngle - pointer.angle;
+            slip = Math.atan2(Math.sin(slip), Math.cos(slip));
 
             if (pointer.active && speed > 0.55) {
                 const amp = Math.min(1, speed / 8);
-                const noseX = pointer.x + Math.cos(pointer.angle) * 28;
-                const noseY = pointer.y + Math.sin(pointer.angle) * 28;
+                const leadX = pointer.x + Math.cos(pointer.moveAngle) * 24;
+                const leadY = pointer.y + Math.sin(pointer.moveAngle) * 24;
                 pointer.wakeDist += speed;
                 pointer.bowDist += speed;
 
                 if (pointer.wakeDist > 7) {
                     const brk = pointer.wakeDist > 90;
                     pointer.wakeDist = 0;
-                    addWake(noseX, noseY, pointer.angle, amp, brk);
+                    addWake(leadX, leadY, pointer.moveAngle, amp, brk);
                 }
-                if (pointer.bowDist > 24) {
+                if (pointer.bowDist > 18) {
                     pointer.bowDist = 0;
-                    addBowWave(noseX, noseY, pointer.angle, amp);
+                    addBowWave(leadX, leadY, pointer.moveAngle, amp, slip);
                 }
             } else {
                 pointer.wakeDist = 999;
@@ -341,10 +357,12 @@ export const Sandbox = () => {
                     const dx = f.x - ring.x;
                     const dy = f.y - ring.y;
                     const d = Math.hypot(dx, dy);
-                    if (Math.abs(d - ring.radius) < CFG.rippleBand && d > 0) {
-                        let rel = Math.atan2(dy, dx) - ring.dir;
-                        rel = Math.atan2(Math.sin(rel), Math.cos(rel));
-                        if (Math.abs(rel) > ring.spread) continue;
+                    if (d === 0) continue;
+                    let rel = Math.atan2(dy, dx) - ring.dir;
+                    rel = Math.atan2(Math.sin(rel), Math.cos(rel));
+                    if (Math.abs(rel - ring.skew) > ring.spread) continue;
+                    const front = ring.radius * (1 + ring.stretch * (1 - Math.cos(rel - ring.skew)) * 0.5);
+                    if (Math.abs(d - front) < CFG.rippleBand) {
                         const strength = ring.push * ring.amp;
                         ax += (dx / d) * strength;
                         ay += (dy / d) * strength;
@@ -378,7 +396,7 @@ export const Sandbox = () => {
                 const r = ripples[i];
                 r.radius += r.speed;
                 r.speed = Math.max(1.15, r.speed * 0.992);
-                r.amp *= 0.987;
+                r.amp *= r.decay;
                 if (r.amp < 0.015 || r.radius - r.crests * r.wavelength > reach) ripples.splice(i, 1);
             }
 
@@ -399,7 +417,7 @@ export const Sandbox = () => {
                     p.y += p.vy;
                     p.vx *= 0.978;
                     p.vy *= 0.978;
-                    p.life -= 0.0065;
+                    p.life -= 0.009;
                     if (p.life <= 0) list.splice(i, 1);
                 }
             }
@@ -451,57 +469,57 @@ export const Sandbox = () => {
             ctx.restore();
         };
 
-        const ARC_SEGMENTS = 9;
+        const ARC_SEGMENTS = 32;
+        const ARC_SUBDIV = 3;
+
+        // Stretching the crest with the angle off the bow turns a plain circle into a teardrop
+        // that hugs the flanks and trails behind, the way water actually parts around a moving body.
+        const crestRadius = (rad, rel, stretch) => rad * (1 + stretch * (1 - Math.cos(rel)) * 0.5);
+
+        const crestLight = (a) => `rgba(202, 243, 255, ${a})`;
+        const crestDark = (a) => `rgba(3, 24, 42, ${a})`;
+
+        const strokeCrest = (r, rad, base, colour, lineW) => {
+            const span = r.spread * 2;
+            for (let s = 0; s < ARC_SEGMENTS; s++) {
+                const rel0 = -r.spread + (span * s) / ARC_SEGMENTS;
+                const rel1 = -r.spread + (span * (s + 1)) / ARC_SEGMENTS;
+
+                let fall = 1;
+                if (r.feather) {
+                    const u = Math.min(1, Math.abs((rel0 + rel1) * 0.5 - r.skew) / r.spread);
+                    fall = 0.5 + 0.5 * Math.cos(Math.PI * u);
+                }
+                const alpha = base * fall;
+                if (alpha < 0.008) continue;
+
+                ctx.beginPath();
+                for (let k = 0; k <= ARC_SUBDIV; k++) {
+                    const rel = rel0 + ((rel1 - rel0) * k) / ARC_SUBDIV;
+                    const rr = crestRadius(rad, rel - r.skew, r.stretch);
+                    const ang = r.dir + rel;
+                    const px = r.x + Math.cos(ang) * rr;
+                    const py = r.y + Math.sin(ang) * rr;
+                    if (k === 0) ctx.moveTo(px, py);
+                    else ctx.lineTo(px, py);
+                }
+                ctx.strokeStyle = colour(alpha);
+                ctx.lineWidth = lineW;
+                ctx.stroke();
+            }
+        };
 
         const drawRipple = (r) => {
             for (let k = 0; k < r.crests; k++) {
                 const rad = r.radius - k * r.wavelength;
                 if (rad <= 1) continue;
-                // Trailing crests fade, and the front loses height as its energy spreads around a longer arc.
+                // Trailing crests fade, and the front loses height as its energy spreads along a longer crest.
                 const env = r.amp * Math.exp(-k * 0.45) * Math.sqrt(34 / (rad + 34));
                 if (env < 0.012) continue;
 
                 const trough = rad - r.wavelength * 0.45;
-
-                if (!r.feather) {
-                    if (trough > 1) {
-                        ctx.lineWidth = 2.4 - k * 0.25;
-                        ctx.strokeStyle = `rgba(3, 24, 42, ${env * 0.5})`;
-                        ctx.beginPath();
-                        ctx.arc(r.x, r.y, trough, 0, TAU);
-                        ctx.stroke();
-                    }
-                    ctx.lineWidth = 1.7 - k * 0.18;
-                    ctx.strokeStyle = `rgba(202, 243, 255, ${env * 0.85})`;
-                    ctx.beginPath();
-                    ctx.arc(r.x, r.y, rad, 0, TAU);
-                    ctx.stroke();
-                    continue;
-                }
-
-                // Bow waves only exist ahead of the shark, so fade each arc out toward its edges.
-                const span = r.spread * 2;
-                for (let seg = 0; seg < ARC_SEGMENTS; seg++) {
-                    const a0 = r.dir - r.spread + (span * seg) / ARC_SEGMENTS;
-                    const a1 = r.dir - r.spread + (span * (seg + 1)) / ARC_SEGMENTS;
-                    const mid = (a0 + a1) / 2 - r.dir;
-                    const falloff = Math.cos((mid / r.spread) * (Math.PI / 2));
-                    const alpha = env * falloff * falloff;
-                    if (alpha < 0.01) continue;
-
-                    if (trough > 1) {
-                        ctx.lineWidth = 2.4 - k * 0.25;
-                        ctx.strokeStyle = `rgba(3, 24, 42, ${alpha * 0.5})`;
-                        ctx.beginPath();
-                        ctx.arc(r.x, r.y, trough, a0, a1 + 0.012);
-                        ctx.stroke();
-                    }
-                    ctx.lineWidth = 1.7 - k * 0.18;
-                    ctx.strokeStyle = `rgba(202, 243, 255, ${alpha * 0.9})`;
-                    ctx.beginPath();
-                    ctx.arc(r.x, r.y, rad, a0, a1 + 0.012);
-                    ctx.stroke();
-                }
+                if (trough > 1) strokeCrest(r, trough, env * 0.5, crestDark, 2.4 - k * 0.25);
+                strokeCrest(r, rad, env * 0.9, crestLight, 1.7 - k * 0.18);
             }
         };
 
@@ -611,9 +629,9 @@ export const Sandbox = () => {
             ctx.lineCap = 'round';
             drawWakeArm(wakeL);
             drawWakeArm(wakeR);
-            ctx.lineCap = 'butt';
 
             for (let i = 0; i < ripples.length; i++) drawRipple(ripples[i]);
+            ctx.lineCap = 'butt';
 
             if (pointer.active) {
                 const speed = Math.hypot(pointer.vx, pointer.vy);
@@ -632,7 +650,7 @@ export const Sandbox = () => {
                     ctx.lineWidth = 1.4 + bow * 1.6;
                     ctx.strokeStyle = `rgba(216, 246, 255, ${bow * 0.5})`;
                     ctx.beginPath();
-                    ctx.arc(pointer.x, pointer.y, 30 + bow * 5, pointer.angle - 0.85, pointer.angle + 0.85);
+                    ctx.arc(pointer.x, pointer.y, 30 + bow * 5, pointer.moveAngle - 0.85, pointer.moveAngle + 0.85);
                     ctx.stroke();
                 }
             }
@@ -655,18 +673,22 @@ export const Sandbox = () => {
             frame = requestAnimationFrame(loop);
         };
 
-        const addBowWave = (x, y, dir, amp) => {
+        const addBowWave = (x, y, dir, amp, slip) => {
             if (ripples.length > 30) ripples.shift();
+            const skew = Math.max(-0.55, Math.min(0.55, slip * 0.7));
             ripples.push({
                 x, y, dir,
-                spread: 1.2,
+                spread: 1.75 + Math.min(0.5, Math.abs(slip) * 0.6),
+                skew,
+                stretch: 0.6,
                 feather: true,
-                radius: 6,
-                speed: 2.5,
+                radius: 8,
+                speed: 2.2,
                 amp: amp * 0.95,
                 wavelength: 12,
                 crests: 3,
                 push: amp * 0.5,
+                decay: 0.972,
             });
         };
 
@@ -676,6 +698,8 @@ export const Sandbox = () => {
                 x, y,
                 dir: 0,
                 spread: Math.PI,
+                skew: 0,
+                stretch: 0,
                 feather: false,
                 radius: 2,
                 speed: 3.1,
@@ -683,6 +707,7 @@ export const Sandbox = () => {
                 wavelength: 15,
                 crests: 5,
                 push: 0.85,
+                decay: 0.987,
             });
         };
 
