@@ -85,12 +85,19 @@ export const Sandbox = () => {
         let ripples = [];
         let droplets = [];
         let motes = [];
+        let wakeL = [];
+        let wakeR = [];
         let waterGradient = null;
         let depthGradient = null;
         let vignette = null;
         let frame = null;
         let visible = true;
-        const pointer = { x: 0, y: 0, active: false, lastRippleX: 0, lastRippleY: 0, angle: 0, targetAngle: 0 };
+        const pointer = {
+            x: 0, y: 0, prevX: 0, prevY: 0, vx: 0, vy: 0,
+            active: false, primed: false,
+            angle: 0, targetAngle: 0,
+            wakeDist: 0, bowDist: 0,
+        };
 
         const causticPattern = ctx.createPattern(buildCausticTile(), 'repeat');
 
@@ -225,13 +232,53 @@ export const Sandbox = () => {
         const separationSq = CFG.separation * CFG.separation;
         const tmp = [0, 0];
 
+        const addWake = (x, y, angle, amp, brk) => {
+            const nx = Math.cos(angle);
+            const ny = Math.sin(angle);
+            const spread = 0.75 + amp * 0.45;
+            if (wakeL.length > 150) wakeL.shift();
+            if (wakeR.length > 150) wakeR.shift();
+            wakeL.push({ x, y, vx: -ny * spread - nx * 0.2, vy: nx * spread - ny * 0.2, life: 1, amp, brk });
+            wakeR.push({ x, y, vx: ny * spread - nx * 0.2, vy: -nx * spread - ny * 0.2, life: 1, amp, brk });
+        };
+
         const update = () => {
-            // Ease the shark toward its last travel direction along the shortest arc.
-            const turn = Math.atan2(
-                Math.sin(pointer.targetAngle - pointer.angle),
-                Math.cos(pointer.targetAngle - pointer.angle)
-            );
-            pointer.angle += turn * 0.16;
+            // Derive the heading from a smoothed per-frame velocity: raw mouse deltas are
+            // too small and noisy to steer from directly, which left the shark stuck facing one way.
+            const mx = pointer.x - pointer.prevX;
+            const my = pointer.y - pointer.prevY;
+            pointer.prevX = pointer.x;
+            pointer.prevY = pointer.y;
+            pointer.vx += (mx - pointer.vx) * 0.25;
+            pointer.vy += (my - pointer.vy) * 0.25;
+
+            const speed = Math.hypot(pointer.vx, pointer.vy);
+            if (speed > 0.4) pointer.targetAngle = Math.atan2(pointer.vy, pointer.vx);
+
+            let turn = pointer.targetAngle - pointer.angle;
+            turn = Math.atan2(Math.sin(turn), Math.cos(turn));
+            const maxTurn = 0.13;
+            pointer.angle += Math.max(-maxTurn, Math.min(maxTurn, turn * 0.22));
+
+            if (pointer.active && speed > 0.55) {
+                const amp = Math.min(1, speed / 8);
+                const noseX = pointer.x + Math.cos(pointer.angle) * 28;
+                const noseY = pointer.y + Math.sin(pointer.angle) * 28;
+                pointer.wakeDist += speed;
+                pointer.bowDist += speed;
+
+                if (pointer.wakeDist > 7) {
+                    const brk = pointer.wakeDist > 90;
+                    pointer.wakeDist = 0;
+                    addWake(noseX, noseY, pointer.angle, amp, brk);
+                }
+                if (pointer.bowDist > 24) {
+                    pointer.bowDist = 0;
+                    addBowWave(noseX, noseY, pointer.angle, amp);
+                }
+            } else {
+                pointer.wakeDist = 999;
+            }
 
             for (let i = 0; i < fish.length; i++) {
                 const f = fish[i];
@@ -295,6 +342,9 @@ export const Sandbox = () => {
                     const dy = f.y - ring.y;
                     const d = Math.hypot(dx, dy);
                     if (Math.abs(d - ring.radius) < CFG.rippleBand && d > 0) {
+                        let rel = Math.atan2(dy, dx) - ring.dir;
+                        rel = Math.atan2(Math.sin(rel), Math.cos(rel));
+                        if (Math.abs(rel) > ring.spread) continue;
                         const strength = ring.push * ring.amp;
                         ax += (dx / d) * strength;
                         ay += (dy / d) * strength;
@@ -340,6 +390,18 @@ export const Sandbox = () => {
                 d.vy *= 0.93;
                 d.life -= 0.028;
                 if (d.life <= 0) droplets.splice(i, 1);
+            }
+
+            for (const list of [wakeL, wakeR]) {
+                for (let i = list.length - 1; i >= 0; i--) {
+                    const p = list[i];
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.vx *= 0.978;
+                    p.vy *= 0.978;
+                    p.life -= 0.0065;
+                    if (p.life <= 0) list.splice(i, 1);
+                }
             }
 
             for (let i = 0; i < motes.length; i++) {
@@ -389,27 +451,71 @@ export const Sandbox = () => {
             ctx.restore();
         };
 
+        const ARC_SEGMENTS = 9;
+
         const drawRipple = (r) => {
             for (let k = 0; k < r.crests; k++) {
                 const rad = r.radius - k * r.wavelength;
                 if (rad <= 1) continue;
-                // Trailing crests fade, and the front loses height as its energy spreads around a longer circumference.
+                // Trailing crests fade, and the front loses height as its energy spreads around a longer arc.
                 const env = r.amp * Math.exp(-k * 0.45) * Math.sqrt(34 / (rad + 34));
                 if (env < 0.012) continue;
 
                 const trough = rad - r.wavelength * 0.45;
-                if (trough > 1) {
-                    ctx.lineWidth = 2.4 - k * 0.25;
-                    ctx.strokeStyle = `rgba(3, 24, 42, ${env * 0.5})`;
+
+                if (!r.feather) {
+                    if (trough > 1) {
+                        ctx.lineWidth = 2.4 - k * 0.25;
+                        ctx.strokeStyle = `rgba(3, 24, 42, ${env * 0.5})`;
+                        ctx.beginPath();
+                        ctx.arc(r.x, r.y, trough, 0, TAU);
+                        ctx.stroke();
+                    }
+                    ctx.lineWidth = 1.7 - k * 0.18;
+                    ctx.strokeStyle = `rgba(202, 243, 255, ${env * 0.85})`;
                     ctx.beginPath();
-                    ctx.arc(r.x, r.y, trough, 0, TAU);
+                    ctx.arc(r.x, r.y, rad, 0, TAU);
                     ctx.stroke();
+                    continue;
                 }
 
-                ctx.lineWidth = 1.7 - k * 0.18;
-                ctx.strokeStyle = `rgba(202, 243, 255, ${env * 0.85})`;
+                // Bow waves only exist ahead of the shark, so fade each arc out toward its edges.
+                const span = r.spread * 2;
+                for (let seg = 0; seg < ARC_SEGMENTS; seg++) {
+                    const a0 = r.dir - r.spread + (span * seg) / ARC_SEGMENTS;
+                    const a1 = r.dir - r.spread + (span * (seg + 1)) / ARC_SEGMENTS;
+                    const mid = (a0 + a1) / 2 - r.dir;
+                    const falloff = Math.cos((mid / r.spread) * (Math.PI / 2));
+                    const alpha = env * falloff * falloff;
+                    if (alpha < 0.01) continue;
+
+                    if (trough > 1) {
+                        ctx.lineWidth = 2.4 - k * 0.25;
+                        ctx.strokeStyle = `rgba(3, 24, 42, ${alpha * 0.5})`;
+                        ctx.beginPath();
+                        ctx.arc(r.x, r.y, trough, a0, a1 + 0.012);
+                        ctx.stroke();
+                    }
+                    ctx.lineWidth = 1.7 - k * 0.18;
+                    ctx.strokeStyle = `rgba(202, 243, 255, ${alpha * 0.9})`;
+                    ctx.beginPath();
+                    ctx.arc(r.x, r.y, rad, a0, a1 + 0.012);
+                    ctx.stroke();
+                }
+            }
+        };
+
+        const drawWakeArm = (list) => {
+            for (let i = 1; i < list.length; i++) {
+                const p = list[i - 1];
+                const q = list[i];
+                if (q.brk) continue;
+                const life = Math.min(p.life, q.life);
+                ctx.lineWidth = 0.9 + life * 1.9;
+                ctx.strokeStyle = `rgba(208, 242, 255, ${life * life * 0.7 * p.amp})`;
                 ctx.beginPath();
-                ctx.arc(r.x, r.y, rad, 0, TAU);
+                ctx.moveTo(p.x, p.y);
+                ctx.lineTo(q.x, q.y);
                 ctx.stroke();
             }
         };
@@ -502,17 +608,33 @@ export const Sandbox = () => {
 
             if (pointer.active) drawShark(t);
 
+            ctx.lineCap = 'round';
+            drawWakeArm(wakeL);
+            drawWakeArm(wakeR);
+            ctx.lineCap = 'butt';
+
             for (let i = 0; i < ripples.length; i++) drawRipple(ripples[i]);
 
             if (pointer.active) {
+                const speed = Math.hypot(pointer.vx, pointer.vy);
                 const dimple = ctx.createRadialGradient(pointer.x, pointer.y, 0, pointer.x, pointer.y, 30);
-                dimple.addColorStop(0, 'rgba(4, 24, 40, 0.34)');
-                dimple.addColorStop(0.72, 'rgba(170, 232, 255, 0.13)');
+                dimple.addColorStop(0, 'rgba(4, 24, 40, 0.3)');
+                dimple.addColorStop(0.72, 'rgba(170, 232, 255, 0.1)');
                 dimple.addColorStop(1, 'rgba(170, 232, 255, 0)');
                 ctx.fillStyle = dimple;
                 ctx.beginPath();
                 ctx.arc(pointer.x, pointer.y, 30, 0, TAU);
                 ctx.fill();
+
+                // Water piling up against the snout.
+                if (speed > 0.8) {
+                    const bow = Math.min(1, speed / 9);
+                    ctx.lineWidth = 1.4 + bow * 1.6;
+                    ctx.strokeStyle = `rgba(216, 246, 255, ${bow * 0.5})`;
+                    ctx.beginPath();
+                    ctx.arc(pointer.x, pointer.y, 30 + bow * 5, pointer.angle - 0.85, pointer.angle + 0.85);
+                    ctx.stroke();
+                }
             }
 
             for (let i = 0; i < droplets.length; i++) {
@@ -533,17 +655,34 @@ export const Sandbox = () => {
             frame = requestAnimationFrame(loop);
         };
 
-        const addRipple = (x, y, amp, push) => {
-            if (ripples.length > 26) ripples.shift();
+        const addBowWave = (x, y, dir, amp) => {
+            if (ripples.length > 30) ripples.shift();
             ripples.push({
-                x,
-                y,
+                x, y, dir,
+                spread: 1.2,
+                feather: true,
+                radius: 6,
+                speed: 2.5,
+                amp: amp * 0.95,
+                wavelength: 12,
+                crests: 3,
+                push: amp * 0.5,
+            });
+        };
+
+        const addSplash = (x, y) => {
+            if (ripples.length > 30) ripples.shift();
+            ripples.push({
+                x, y,
+                dir: 0,
+                spread: Math.PI,
+                feather: false,
                 radius: 2,
-                speed: push > 0 ? 3.1 : 2.3,
-                amp,
-                wavelength: push > 0 ? 15 : 11,
-                crests: push > 0 ? 5 : 3,
-                push,
+                speed: 3.1,
+                amp: 1,
+                wavelength: 15,
+                crests: 5,
+                push: 0.85,
             });
         };
 
@@ -551,28 +690,28 @@ export const Sandbox = () => {
             const rect = canvas.getBoundingClientRect();
             const nx = e.clientX - rect.left;
             const ny = e.clientY - rect.top;
-            const dx = nx - pointer.x;
-            const dy = ny - pointer.y;
-            if (dx * dx + dy * dy > 4) pointer.targetAngle = Math.atan2(dy, dx);
+            if (!pointer.primed) {
+                pointer.primed = true;
+                pointer.prevX = nx;
+                pointer.prevY = ny;
+            }
             pointer.x = nx;
             pointer.y = ny;
             pointer.active = true;
-            if (Math.hypot(pointer.x - pointer.lastRippleX, pointer.y - pointer.lastRippleY) > 34) {
-                pointer.lastRippleX = pointer.x;
-                pointer.lastRippleY = pointer.y;
-                addRipple(pointer.x, pointer.y, 0.5, 0);
-            }
         };
 
         const onPointerLeave = () => {
             pointer.active = false;
+            pointer.primed = false;
+            pointer.vx = 0;
+            pointer.vy = 0;
         };
 
         const onPointerDown = (e) => {
             const rect = canvas.getBoundingClientRect();
             const x = e.clientX - rect.left;
             const y = e.clientY - rect.top;
-            addRipple(x, y, 1, 0.85);
+            addSplash(x, y);
             for (let i = 0; i < 16; i++) {
                 const a = Math.random() * TAU;
                 const sp = 1.4 + Math.random() * 3.2;
