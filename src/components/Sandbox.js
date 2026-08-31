@@ -278,8 +278,8 @@ export const Sandbox = () => {
 
             if (pointer.active && speed > 0.55) {
                 const amp = Math.min(1, speed / 8);
-                const leadX = pointer.x + Math.cos(pointer.moveAngle) * 24;
-                const leadY = pointer.y + Math.sin(pointer.moveAngle) * 24;
+                const leadX = pointer.x + Math.cos(pointer.moveAngle) * 34;
+                const leadY = pointer.y + Math.sin(pointer.moveAngle) * 34;
                 pointer.wakeDist += speed;
                 pointer.bowDist += speed;
 
@@ -288,7 +288,7 @@ export const Sandbox = () => {
                     pointer.wakeDist = 0;
                     addWake(leadX, leadY, pointer.moveAngle, amp, brk);
                 }
-                if (pointer.bowDist > 18) {
+                if (pointer.bowDist > 32) {
                     pointer.bowDist = 0;
                     addBowWave(leadX, leadY, pointer.moveAngle, amp, slip);
                 }
@@ -360,10 +360,10 @@ export const Sandbox = () => {
                     if (d === 0) continue;
                     let rel = Math.atan2(dy, dx) - ring.dir;
                     rel = Math.atan2(Math.sin(rel), Math.cos(rel));
-                    if (Math.abs(rel - ring.skew) > ring.spread) continue;
-                    const front = ring.radius * (1 + ring.stretch * (1 - Math.cos(rel - ring.skew)) * 0.5);
+                    const front = ring.radius * (1 + ring.stretch * (1 - Math.cos(rel)) * 0.5);
                     if (Math.abs(d - front) < CFG.rippleBand) {
-                        const strength = ring.push * ring.amp;
+                        const fall = ring.bias + (1 - ring.bias) * (1 + Math.cos(rel)) * 0.5;
+                        const strength = ring.push * ring.amp * fall;
                         ax += (dx / d) * strength;
                         ay += (dy / d) * strength;
                     }
@@ -469,34 +469,30 @@ export const Sandbox = () => {
             ctx.restore();
         };
 
-        const ARC_SEGMENTS = 32;
-        const ARC_SUBDIV = 3;
+        const ARC_SEGMENTS = 44;
+        const ARC_SUBDIV = 2;
 
-        // Stretching the crest with the angle off the bow turns a plain circle into a teardrop
-        // that hugs the flanks and trails behind, the way water actually parts around a moving body.
+        // Doppler: the crest bunches up ahead of the shark and stretches out behind it.
         const crestRadius = (rad, rel, stretch) => rad * (1 + stretch * (1 - Math.cos(rel)) * 0.5);
 
         const crestLight = (a) => `rgba(202, 243, 255, ${a})`;
         const crestDark = (a) => `rgba(3, 24, 42, ${a})`;
 
+        // Each wavelet is a complete ring; it just carries most of its energy forward. Clipping
+        // one to a sector is what made it read as a drawn-on semicircle.
         const strokeCrest = (r, rad, base, colour, lineW) => {
-            const span = r.spread * 2;
             for (let s = 0; s < ARC_SEGMENTS; s++) {
-                const rel0 = -r.spread + (span * s) / ARC_SEGMENTS;
-                const rel1 = -r.spread + (span * (s + 1)) / ARC_SEGMENTS;
-
-                let fall = 1;
-                if (r.feather) {
-                    const u = Math.min(1, Math.abs((rel0 + rel1) * 0.5 - r.skew) / r.spread);
-                    fall = 0.5 + 0.5 * Math.cos(Math.PI * u);
-                }
+                const rel0 = (TAU * s) / ARC_SEGMENTS;
+                const rel1 = (TAU * (s + 1)) / ARC_SEGMENTS;
+                const mid = (rel0 + rel1) * 0.5;
+                const fall = r.bias + (1 - r.bias) * (1 + Math.cos(mid)) * 0.5;
                 const alpha = base * fall;
-                if (alpha < 0.008) continue;
+                if (alpha < 0.006) continue;
 
                 ctx.beginPath();
                 for (let k = 0; k <= ARC_SUBDIV; k++) {
                     const rel = rel0 + ((rel1 - rel0) * k) / ARC_SUBDIV;
-                    const rr = crestRadius(rad, rel - r.skew, r.stretch);
+                    const rr = crestRadius(rad, rel, r.stretch);
                     const ang = r.dir + rel;
                     const px = r.x + Math.cos(ang) * rr;
                     const py = r.y + Math.sin(ang) * rr;
@@ -518,7 +514,7 @@ export const Sandbox = () => {
                 if (env < 0.012) continue;
 
                 const trough = rad - r.wavelength * 0.45;
-                if (trough > 1) strokeCrest(r, trough, env * 0.5, crestDark, 2.4 - k * 0.25);
+                if (k === 0 && trough > 1) strokeCrest(r, trough, env * 0.5, crestDark, 2.2);
                 strokeCrest(r, rad, env * 0.9, crestLight, 1.7 - k * 0.18);
             }
         };
@@ -674,38 +670,34 @@ export const Sandbox = () => {
         };
 
         const addBowWave = (x, y, dir, amp, slip) => {
-            if (ripples.length > 30) ripples.shift();
-            const skew = Math.max(-0.55, Math.min(0.55, slip * 0.7));
+            if (ripples.length > 16) ripples.shift();
             ripples.push({
-                x, y, dir,
-                spread: 1.75 + Math.min(0.5, Math.abs(slip) * 0.6),
-                skew,
-                stretch: 0.6,
-                feather: true,
-                radius: 8,
+                x, y,
+                dir: dir + Math.max(-0.5, Math.min(0.5, slip * 0.7)),
+                bias: 0.28,
+                stretch: 0.45,
+                radius: 30,
                 speed: 2.2,
-                amp: amp * 0.95,
-                wavelength: 12,
-                crests: 3,
+                amp: amp * 1.15,
+                wavelength: 13,
+                crests: 2,
                 push: amp * 0.5,
-                decay: 0.972,
+                decay: 0.958,
             });
         };
 
         const addSplash = (x, y) => {
-            if (ripples.length > 30) ripples.shift();
+            if (ripples.length > 24) ripples.shift();
             ripples.push({
                 x, y,
                 dir: 0,
-                spread: Math.PI,
-                skew: 0,
+                bias: 1,
                 stretch: 0,
-                feather: false,
-                radius: 2,
+                radius: 6,
                 speed: 3.1,
                 amp: 1,
                 wavelength: 15,
-                crests: 5,
+                crests: 4,
                 push: 0.85,
                 decay: 0.987,
             });
