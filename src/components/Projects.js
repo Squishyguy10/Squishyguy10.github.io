@@ -1,4 +1,4 @@
-import { Container, Row, Col, Tab } from 'react-bootstrap';
+import { Container, Row, Col } from 'react-bootstrap';
 import { ProjectCard } from "./ProjectCard";
 import colorSharp2 from '../assets/img/color-sharp2.png';
 import spareLink from '../assets/img/sparelinklogo.png';
@@ -11,32 +11,37 @@ export const Projects = () => {
     const projects = [
         {
             title: "SpareLink",
-            description: "Student schedule organizer/tracker designed for teachers. Made with Java and Java Swing, with lots of Object-Oriented Programming. ",
+            description: "A desktop dashboard that lets teachers track student spares, attendance and timetables in one place instead of a stack of paper.",
+            tags: ["Java", "Swing", "OOP"],
             imgUrl: spareLink,
             github: "https://github.com/Squishyguy10/SpareLink",
             noScale: "no-scale",
         },
         {
             title: "Table Tablet",
-            description: "Turn any flat surface into a drawing tablet with just a webcam. Made with Python, using MediaPipe and OpenCV. ",
+            description: "Turns any flat surface into a drawing tablet using nothing but a webcam and real-time hand tracking.",
+            tags: ["Python", "MediaPipe", "OpenCV"],
             imgUrl: tableTablet,
             github: "https://github.com/Squishyguy10/table-tablet",
         },
         {
             title: "The 3 Rs",
-            description: "An app that aims to improve environmental sustainability through a supermarket and recycling program. Built with React, Tailwind CSS, NodeJS, and MongoDB Atlas. ",
+            description: "A sustainability app that pairs a supermarket rewards program with recycling incentives to cut down household waste.",
+            tags: ["React", "Tailwind", "Node.js", "MongoDB"],
             imgUrl: t3r,
             github: "https://github.com/Squishyguy10/t3r",
         },
         {
             title: "Goock Games",
-            description: "A platform where you code algorithms to play games for you against other players. Built with React, Tailwind CSS, and NodeJS. ",
+            description: "A competitive arena where you write the algorithm and your code plays the game for you against everyone else.",
+            tags: ["React", "Tailwind", "Node.js"],
             imgUrl: goockGames,
             github: "https://github.com/Squishyguy10/goock",
         },
         {
             title: "Tag",
-            description: "A couch party game modelled after the playground Tag game. Made with Python, using the CMU Graphics Library.",
+            description: "A couch party game modelled after playground tag, built from scratch on a bare-bones graphics library.",
+            tags: ["Python", "CMU Graphics"],
             imgUrl: tag,
             github: "https://github.com/Squishyguy10/School/blob/master/ICS3U/tag.py",
         },
@@ -47,45 +52,23 @@ export const Projects = () => {
             <Container id='projects'>
                 <Row>
                     <Col>
+                        <span className='section-eyebrow'>Portfolio</span>
                         <h2> Projects </h2>
-                        <p> Here are some of my projects that I am most proud of. </p>
-                        
-                        <Tab.Container id="project-tabs" defaultActiveKey="first">
-                            {/*
-                            <Nav variant="pills" className="nav-pills mb-5 justify-content-center align-items-center" id="pills-tab">
-                                <Nav.Item>
-                                    <Nav.Link eventKey="first">Goock Games</Nav.Link>
-                                </Nav.Item>
-                                <Nav.Item>
-                                    <Nav.Link eventKey="second">Table Tablet</Nav.Link>
-                                </Nav.Item>
-                                <Nav.Item>
-                                    <Nav.Link eventKey="third">SpareLink</Nav.Link>
-                                </Nav.Item>
-                            </Nav>
-                            */}
-
-                            <Tab.Content>
-                                <Tab.Pane eventKey='first'>
-                                    <Row>
-                                        {
-                                            projects.map((project, index) => {
-                                                return (
-                                                    <ProjectCard
-                                                        key={index}
-                                                        {...project}
-                                                    />
-                                                )
-                                            })
-                                        }
-                                    </Row>
-                                </Tab.Pane>
-                            </Tab.Content>
-                        </Tab.Container>
+                        <p className='project-intro'>
+                            A mix of things I've built to scratch an itch, win a hackathon, or just
+                            see if it was possible. Click any card to dig through the code.
+                        </p>
                     </Col>
                 </Row>
+                <Row>
+                    {
+                        projects.map((project, index) => (
+                            <ProjectCard key={index} {...project} />
+                        ))
+                    }
+                </Row>
             </Container>
-            <img className='background-image-right' src={colorSharp2} alt="" />    
+            <img className='background-image-right' src={colorSharp2} alt="" />
         </section>
     )
 }
