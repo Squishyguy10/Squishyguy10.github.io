@@ -4,6 +4,7 @@ import { NavBar } from './components/NaviBar';
 import { Banner } from './components/Banner';
 import { Projects } from './components/Projects';
 import { Sandbox } from './components/Sandbox';
+import { SeaFloor } from './components/SeaFloor';
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
       <Banner />
       <Projects />
       <Sandbox />
+      <SeaFloor />
     </div>
   );
 }
