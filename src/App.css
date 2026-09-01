@@ -727,22 +727,23 @@ span.Navbar-text {
   z-index: 1;
 }
 
-/* Hinged along the mouth line and laid back in perspective, so the shell opens toward the viewer. */
+/* The hinge axis sits behind the mouth line (negative z), so the front lip gapes open
+   while the rear stays joined to the lower shell. */
 .sf-shell-top {
   bottom: 44px;
   z-index: 4;
-  transform-origin: 50% 100%;
+  transform-origin: 50% 100% -52px;
   transform: perspective(620px) rotateX(0deg);
-  transition: transform 0.6s cubic-bezier(0.34, 1.32, 0.5, 1), filter 0.6s ease;
+  transition: transform 0.6s cubic-bezier(0.34, 1.28, 0.5, 1), filter 0.6s ease;
 }
 
 .sf-clam:hover .sf-shell-top {
-  transform: perspective(620px) translateY(-7px) rotateX(-12deg);
+  transform: perspective(620px) rotateX(-10deg);
 }
 
 .sf-clam.is-open .sf-shell-top {
-  transform: perspective(620px) translateY(-32px) rotateX(-46deg);
-  filter: drop-shadow(0 12px 16px rgba(2, 12, 22, 0.6)) brightness(0.86);
+  transform: perspective(620px) rotateX(-36deg);
+  filter: drop-shadow(0 12px 16px rgba(2, 12, 22, 0.6)) brightness(0.94);
 }
 
 /* The cavity revealed once the lid lifts: dark at the hinge, catching light at the lip. */
