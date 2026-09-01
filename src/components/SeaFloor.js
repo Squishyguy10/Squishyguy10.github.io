@@ -85,6 +85,7 @@ export const SeaFloor = () => {
                 aria-label={open ? 'Close the clam' : 'Open the clam'}
             >
                 <span className='sf-clam-glow' aria-hidden='true' />
+                <span className='sf-clam-interior' aria-hidden='true' />
                 <span className='sf-clam-pearl' aria-hidden='true' />
 
                 <svg className='sf-shell sf-shell-top' viewBox='0 0 160 50' aria-hidden='true'>
@@ -119,8 +120,6 @@ export const SeaFloor = () => {
                     </defs>
                 </svg>
             </button>
-
-            <span className='sf-hint'>{open ? 'A pearl!' : 'Psst — try the clam'}</span>
 
             <svg className='sf-sand' viewBox='0 0 1440 150' preserveAspectRatio='none' aria-hidden='true'>
                 <path
