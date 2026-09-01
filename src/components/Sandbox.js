@@ -743,6 +743,10 @@ export const Sandbox = () => {
             }
         };
 
+        const onContextMenu = (e) => {
+            e.preventDefault();
+        };
+
         resize();
 
         if (reduceMotion) {
@@ -756,6 +760,7 @@ export const Sandbox = () => {
         canvas.addEventListener('pointermove', onPointerMove);
         canvas.addEventListener('pointerleave', onPointerLeave);
         canvas.addEventListener('pointerdown', onPointerDown);
+        canvas.addEventListener('contextmenu', onContextMenu);
 
         const resizeObserver = new ResizeObserver(resize);
         resizeObserver.observe(canvas);
@@ -781,6 +786,7 @@ export const Sandbox = () => {
             canvas.removeEventListener('pointermove', onPointerMove);
             canvas.removeEventListener('pointerleave', onPointerLeave);
             canvas.removeEventListener('pointerdown', onPointerDown);
+            canvas.removeEventListener('contextmenu', onContextMenu);
         };
     }, []);
 
@@ -790,12 +796,7 @@ export const Sandbox = () => {
                 <Row>
                     <Col>
                         <span className='section-eyebrow'>Sandbox</span>
-                        <h2> Flocking </h2>
-                        <p className='sandbox-intro'>
-                            A school of boids running Reynolds' three rules &mdash; separation, alignment
-                            and cohesion. Your cursor is the shark: swim it through the tank to push
-                            ripples ahead of you and scatter the school, then click to make a splash.
-                        </p>
+                        <h2> Fish </h2>
                     </Col>
                 </Row>
                 <Row>
