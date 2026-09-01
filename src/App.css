@@ -738,11 +738,11 @@ span.Navbar-text {
 }
 
 .sf-clam:hover .sf-shell-top {
-  transform: perspective(620px) rotateX(-10deg);
+  transform: perspective(620px) rotateX(10deg);
 }
 
 .sf-clam.is-open .sf-shell-top {
-  transform: perspective(620px) rotateX(-36deg);
+  transform: perspective(620px) rotateX(36deg);
   filter: drop-shadow(0 12px 16px rgba(2, 12, 22, 0.6)) brightness(0.94);
 }
 
