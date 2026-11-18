@@ -363,8 +363,10 @@ export function ParticleField({ shape = "donut" }) {
             context.fillStyle = glowGradient;
             context.fillRect(0, 0, width, height);
 
-            const inverseWidth = 1 / Math.max(width, 1);
-            const inverseHeight = 1 / Math.max(height, 1);
+            const fieldSize = Math.min(width, height);
+            const fieldOffsetX = (width - fieldSize) * 0.5;
+            const fieldOffsetY = (height - fieldSize) * 0.5;
+            const inverseFieldSize = 1 / Math.max(fieldSize, 1);
             const pointerX = pointer.x * width;
             const pointerY = pointer.y * height;
             particles.forEach((particle, index) => {
@@ -377,23 +379,25 @@ export function ParticleField({ shape = "donut" }) {
                     : Math.cos(time * 0.00028 + particle.phase * 1.2) * particle.floatScale
                         + Math.sin(time * 0.00017 + particle.phase * 0.8) * particle.floatScale * 0.5;
                 const floatMultiplier = particle.edge ? 0.12 : particle.tip ? 0.3 : 1;
-                const targetX = particle.targetX * width + floatX * floatMultiplier;
-                const targetY = particle.targetY * height + floatY * floatMultiplier;
+                const particleX = fieldOffsetX + particle.x * fieldSize;
+                const particleY = fieldOffsetY + particle.y * fieldSize;
+                const targetX = fieldOffsetX + particle.targetX * fieldSize + floatX * floatMultiplier;
+                const targetY = fieldOffsetY + particle.targetY * fieldSize + floatY * floatMultiplier;
                 const drift = reduceMotion ? 0 : Math.sin(time * 0.0007 + index) * 0.18;
-                const dx = targetX - particle.x * width;
-                const dy = targetY - particle.y * height;
-                const pointerDistance = Math.hypot(pointerX - particle.x * width, pointerY - particle.y * height);
+                const dx = targetX - particleX;
+                const dy = targetY - particleY;
+                const pointerDistance = Math.hypot(pointerX - particleX, pointerY - particleY);
                 const repel = pointer.active && pointerDistance < 120 ? (1 - pointerDistance / 120) * 0.65 : 0;
 
-                particle.vx += dx * 0.0019 + Math.cos(time * 0.00055 + index) * 0.0015 + repel * (particle.x * width - pointer.x * width) / Math.max(pointerDistance, 1) * 0.04;
+                particle.vx += dx * 0.0019 + Math.cos(time * 0.00055 + index) * 0.0015 + repel * (particleX - pointerX) / Math.max(pointerDistance, 1) * 0.04;
                 particle.vy += dy * 0.0019 + drift * 0.0008;
                 particle.vx *= 0.94;
                 particle.vy *= 0.94;
-                particle.x += particle.vx * inverseWidth;
-                particle.y += particle.vy * inverseHeight;
+                particle.x += particle.vx * inverseFieldSize;
+                particle.y += particle.vy * inverseFieldSize;
                 particle.depth += (particle.targetDepth - particle.depth) * 0.015;
-                particle.renderX = particle.x * width;
-                particle.renderY = particle.y * height;
+                particle.renderX = fieldOffsetX + particle.x * fieldSize;
+                particle.renderY = fieldOffsetY + particle.y * fieldSize;
             });
 
             particles.forEach((particle) => {
