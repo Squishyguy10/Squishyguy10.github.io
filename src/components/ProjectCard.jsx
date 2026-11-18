@@ -1,6 +1,11 @@
-export function ProjectCard({ project }) {
+export function ProjectCard({ project, index, isActive }) {
     return (
-        <a className="project-card" href={project.link} target="_blank" rel="noreferrer">
+        <a
+            className={`project-card ${index % 2 === 0 ? "is-image-right" : "is-image-left"} ${isActive ? "is-active" : ""}`}
+            href={project.link}
+            target="_blank"
+            rel="noreferrer"
+        >
             <div className="project-image">
                 <img src={project.image} alt={`${project.title} project`} />
                 <span className="project-number">{project.number}</span>
