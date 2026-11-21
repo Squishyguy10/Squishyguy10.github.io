@@ -1,16 +1,13 @@
 export function ProjectCard({ project, index, isActive }) {
     return (
-        <a
+        <article
             className={`project-card ${index % 2 === 0 ? "is-image-right" : "is-image-left"} ${isActive ? "is-active" : ""}`}
-            href={project.link}
-            target="_blank"
-            rel="noreferrer"
         >
-            <div className="project-image">
+            <a className="project-image project-image-link" href={project.link} target="_blank" rel="noreferrer">
                 <img src={project.image} alt={`${project.title} project`} />
                 <span className="project-number">{project.number}</span>
                 <span className="project-arrow" aria-hidden="true">↗</span>
-            </div>
+            </a>
             <div className="project-details">
                 <div>
                     <p className="project-type">{project.type}</p>
@@ -21,6 +18,6 @@ export function ProjectCard({ project, index, isActive }) {
                     {project.tags.map((tag) => <span key={tag}>{tag}</span>)}
                 </div>
             </div>
-        </a>
+        </article>
     );
 }

@@ -10,7 +10,7 @@ export const projects = [
         title: "SpareLink",
         type: "Desktop dashboard",
         description: "A focused tool for teachers to manage student spares, attendance, and timetables without a stack of paper.",
-        tags: ["Java", "Swing", "OOP"],
+        tags: ["Java", "Swing"],
         image: spareLink,
         link: "https://github.com/Squishyguy10/SpareLink",
     },
